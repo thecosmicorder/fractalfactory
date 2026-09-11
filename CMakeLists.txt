@@ -9,6 +9,7 @@ if(NOT WIN32)
   message(FATAL_ERROR "Fractal Factory V1 currently targets Windows x64.")
 endif()
 
+find_package(GLEW REQUIRED)
 set(FFGL_BUILD_EXAMPLE_PLUGINS OFF CACHE BOOL "" FORCE)
 add_subdirectory(external/ffgl EXCLUDE_FROM_ALL)
 
@@ -18,7 +19,7 @@ add_library(FractalFactory MODULE
   src/FractalFactoryShared.h
 )
 target_include_directories(FractalFactory PRIVATE external/ffgl/source/lib src)
-target_link_libraries(FractalFactory PRIVATE ffgl::sdk opengl32)
+target_link_libraries(FractalFactory PRIVATE ffgl::sdk GLEW::GLEW opengl32)
 target_compile_definitions(FractalFactory PRIVATE WIN32_LEAN_AND_MEAN NOMINMAX)
 set_target_properties(FractalFactory PROPERTIES PREFIX "" OUTPUT_NAME "FractalFactory")
 
