@@ -1,0 +1,52 @@
+name: Build Fractal Factory Windows x64
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Clone Resolume FFGL SDK
+        shell: powershell
+        run: |
+          git clone --depth 1 https://github.com/resolume/ffgl.git external/ffgl
+
+      - name: Configure
+        shell: powershell
+        run: |
+          cmake -S . -B build -A x64
+
+      - name: Build
+        shell: powershell
+        run: |
+          cmake --build build --config Release --parallel
+
+      - name: Package DLL
+        shell: powershell
+        run: |
+          New-Item -ItemType Directory -Force -Path artifacts | Out-Null
+          Copy-Item build/Release/FractalFactory.dll artifacts/FractalFactory.dll
+
+      - name: Install Inno Setup
+        shell: powershell
+        run: |
+          choco install innosetup -y --no-progress
+
+      - name: Build Installer
+        shell: powershell
+        run: |
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer/FractalFactory.iss
+          Copy-Item installer/output/FractalFactory_Setup_x64.exe artifacts/FractalFactory_Setup_x64.exe
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: FractalFactory-Windows-x64
+          path: artifacts/*
