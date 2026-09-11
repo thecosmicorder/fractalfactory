@@ -17,24 +17,27 @@ jobs:
         shell: powershell
         run: git clone --depth 1 https://github.com/resolume/ffgl.git external/ffgl
 
-      - name: Install GLEW with vcpkg
+      - name: Install static GLEW with vcpkg
         shell: powershell
-        run: vcpkg install glew:x64-windows
+        run: vcpkg install glew:x64-windows-static
 
-      - name: Configure x64
+      - name: Configure x64 static runtime
         shell: powershell
-        run: cmake -S . -B build -A x64 -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake"
+        run: |
+          cmake -S . -B build -A x64 `
+            -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" `
+            -DVCPKG_TARGET_TRIPLET=x64-windows-static `
+            -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded
 
       - name: Build Release
         shell: powershell
         run: cmake --build build --config Release --parallel
 
-      - name: Collect binaries
+      - name: Collect plugin
         shell: powershell
         run: |
           New-Item -ItemType Directory -Force -Path artifacts | Out-Null
           Copy-Item build/Release/FractalFactory.dll artifacts/FractalFactory.dll
-          Copy-Item build/Release/FractalFactoryControl.exe artifacts/FractalFactoryControl.exe
 
       - name: Install Inno Setup
         shell: powershell
@@ -49,6 +52,6 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: FractalFactory-Windows-x64
+          name: FractalFactory-Resolume-InternalUI-x64
           path: artifacts/*
           if-no-files-found: error
