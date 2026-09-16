@@ -1,0 +1,50 @@
+name: Temporary Alchemy Lab Bootloader Build
+
+on:
+  push:
+    branches: [ tmp-alchemy-bootloader-build ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Install ARM GNU toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-arm-none-eabi binutils-arm-none-eabi
+          arm-none-eabi-gcc --version
+
+      - name: Clone Alchemy bootloader with pinned libDaisy
+        run: |
+          git clone --recurse-submodules https://github.com/hermetic-modular/alchemy-lab-bootloader.git alchemy
+          cd alchemy
+          git rev-parse HEAD
+          git -C libDaisy rev-parse HEAD
+
+      - name: Build libDaisy
+        run: make -C alchemy/libDaisy -j2
+
+      - name: Build Alchemy V2 production bootloader
+        run: |
+          make -C alchemy/bootloader clean
+          make -C alchemy/bootloader DSY_DFU_USE_EXT_USB=1 DSY_BOOT_TIMEOUT_MS=2000 -j2
+
+      - name: Verify and stage binary
+        run: |
+          set -euxo pipefail
+          BIN=alchemy/bootloader/build/dsy_bootloader_v6_5-alchemyv2-extdfu-2000ms.bin
+          ELF=alchemy/bootloader/build/dsy_bootloader_v6_5-alchemyv2-extdfu-2000ms.elf
+          test -s "$BIN"
+          mkdir -p artifacts
+          cp "$BIN" artifacts/
+          arm-none-eabi-size "$ELF" | tee artifacts/size.txt
+          sha256sum "$BIN" | tee artifacts/sha256.txt
+          stat -c '%n %s bytes' "$BIN" | tee artifacts/file-size.txt
+
+      - name: Upload bootloader artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: alchemy-lab-bootloader-v6.5-production
+          path: artifacts/*
+          if-no-files-found: error
