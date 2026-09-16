@@ -28,7 +28,7 @@ jobs:
       - name: Build Alchemy V2 production bootloader
         run: |
           make -C alchemy/bootloader clean
-          make -C alchemy/bootloader DSY_DFU_USE_EXT_USB=1 DSY_BOOT_TIMEOUT_MS=2000 -j2
+          make -C alchemy/bootloader all DSY_DFU_USE_EXT_USB=1 DSY_BOOT_TIMEOUT_MS=2000 -j2
 
       - name: Verify and stage binary
         run: |
